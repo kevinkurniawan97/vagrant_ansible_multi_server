@@ -25,3 +25,32 @@ cat >> /etc/hosts <<EOL
 10.0.15.28  web8
 10.0.15.29  web9
 EOL
+
+#install Apache
+sudo apt-get -y install sshpass
+sudo apt-get -y install apache2-utils
+
+cat >> /etc/ansible/hosts <<EOL
+
+[webserver]
+web1 ansible_ssh_pass=vagrant ansible_ssh_user=vagrant
+web2 ansible_ssh_pass=vagrant ansible_ssh_user=vagrant
+
+[lb]
+loadbalancer ansible_ssh_pass=vagrant ansible_ssh_user=vagrant
+EOL
+
+cat >> /etc/ansible/ansible.cfg <<EOL
+[defaults]
+host_key_checking = False
+EOL
+
+ssh-keyscan -H loadbalancer >> /home/vagrant/.ssh/known_hosts
+ssh-keyscan -H web1 >> /home/vagrant/.ssh/known_hosts
+ssh-keyscan -H web2 >> /home/vagrant/.ssh/known_hosts
+
+cd /vagrant/
+sshpass -p vagrant ansible-playbook apache.yml --ask-pass
+sshpass -p vagrant ansible-playbook haproxy.yml --ask-pass
+
+sudo service haproxy restart
